@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { C, FONT, LOGO_FIGURES } from "@/lib/theme";
+import { ListingChips, rowToFamily, rowToProvider } from "@/components/ChildcareMatcher";
 
 function Shell({ children }) {
   return (
@@ -21,37 +22,22 @@ function Shell({ children }) {
   );
 }
 
-function Detail({ label, value }) {
-  if (!value) return null;
-  return (
-    <div style={{ display: "flex", gap: 6, fontSize: 13 }}>
-      <span style={{ color: C.muted, fontWeight: 600 }}>{label}:</span>
-      <span style={{ color: C.ink }}>{value}</span>
-    </div>
-  );
-}
-
 function CounterpartCard({ counterpart, isProvider }) {
+  const item = isProvider ? rowToProvider(counterpart) : rowToFamily(counterpart);
   return (
     <div style={{
-      borderRadius: 16, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 8,
+      borderRadius: 16, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 9,
       background: C.card, border: `1px solid ${C.line}`,
     }}>
       <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 17, fontWeight: 700, color: C.ink }}>
-        {counterpart.label || "(untitled)"}
+        {item.label || "(untitled)"}
       </span>
-      {counterpart.contact_email && (
-        <a href={`mailto:${counterpart.contact_email}`} style={{ fontSize: 13, color: C.plum, fontWeight: 600 }}>
-          {counterpart.contact_email}
+      {item.contactEmail && (
+        <a href={`mailto:${item.contactEmail}`} style={{ fontSize: 13, color: C.plum, fontWeight: 600 }}>
+          {item.contactEmail}
         </a>
       )}
-      <Detail label="ZIP" value={counterpart.zip} />
-      <Detail label="Schedule" value={counterpart.flexible ? "Flexible" : `${counterpart.start_time || ""}–${counterpart.end_time || ""}`} />
-      <Detail label="Term" value={isProvider ? counterpart.terms_accepted : counterpart.term} />
-      <Detail label="Ages" value={isProvider ? [counterpart.min_age, counterpart.max_age].filter(Boolean).join("–") : counterpart.ages} />
-      <Detail label="Rate" value={counterpart.rate} />
-      <Detail label="Care location" value={counterpart.care_location} />
-      <Detail label="Notes" value={counterpart.notes} />
+      <ListingChips item={item} kind={isProvider ? "provider" : "parent"} />
     </div>
   );
 }

@@ -190,9 +190,9 @@ function fromRow(row, fieldMap) {
 }
 
 export const familyToRow = (item) => toRow(item, FAMILY_FIELDS);
-const rowToFamily = (row) => fromRow(row, FAMILY_FIELDS);
+export const rowToFamily = (row) => fromRow(row, FAMILY_FIELDS);
 export const providerToRow = (item) => toRow(item, PROVIDER_FIELDS);
-const rowToProvider = (row) => fromRow(row, PROVIDER_FIELDS);
+export const rowToProvider = (row) => fromRow(row, PROVIDER_FIELDS);
 
 // ── Pre-loaded roster from Carli's FB Group Posts spreadsheets ──
 const SEED_PARENTS = [
@@ -480,7 +480,7 @@ function Section({ title, children }) {
   );
 }
 
-function Chip({ children, tone }) {
+export function Chip({ children, tone }) {
   const tones = {
     default: { bg: C.plumPale, fg: C.plumDark, line: "#DCC7D3" },
     gold: { bg: C.goldPale, fg: C.gold, line: C.goldLine },
@@ -1007,11 +1007,20 @@ function ListingCard({ item, kind, onDelete, onSave, onApprove }) {
           </button>
         </div>
       </div>
+      <ListingChips item={item} kind={kind} />
+    </div>
+  );
+}
+
+export function ListingChips({ item, kind }) {
+  const isParent = kind === "parent";
+  return (
+    <>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
         {item.zip ? <Chip>ZIP {item.zip}</Chip> : <Chip tone="red">ZIP unknown</Chip>}
         {item.flexible
           ? <Chip tone="gold">flexible schedule</Chip>
-          : item.days.map((d) => <Chip key={d}>{d}</Chip>)}
+          : (item.days || []).map((d) => <Chip key={d}>{d}</Chip>)}
         {!item.flexible && <Chip>{item.startTime}–{item.endTime}</Chip>}
         {isParent
           ? <Chip>{item.term === "long" ? "long-term" : "short-term"}</Chip>
@@ -1046,7 +1055,7 @@ function ListingCard({ item, kind, onDelete, onSave, onApprove }) {
           {item.notes}
         </p>
       )}
-    </div>
+    </>
   );
 }
 
