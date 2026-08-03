@@ -1052,7 +1052,7 @@ function ListingCard({ item, kind, onDelete, onSave, onApprove }) {
 
 // ────────────────────────── match cards & groups ──────────────────────────
 
-function MatchCard({ m, rank, nameLabel, nameEmail }) {
+function MatchCard({ m, rank, nameLabel, nameEmail, confirmed, onConfirm }) {
   const scoreColor = m.score >= 70 ? C.green : m.score >= 40 ? C.gold : C.red;
   const insight = matchInsight(m);
   return (
@@ -1074,12 +1074,27 @@ function MatchCard({ m, rank, nameLabel, nameEmail }) {
             </a>
           )}
         </div>
-        <span style={{
-          fontSize: 12, fontWeight: 700, padding: "2px 10px", borderRadius: 20,
-          background: C.plumPale, color: scoreColor,
-        }}>
-          {m.score}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <span style={{
+            fontSize: 12, fontWeight: 700, padding: "2px 10px", borderRadius: 20,
+            background: C.plumPale, color: scoreColor,
+          }}>
+            {m.score}
+          </span>
+          <button
+            onClick={onConfirm}
+            disabled={confirmed}
+            style={{
+              padding: "5px 11px", borderRadius: 10, fontSize: 11, fontWeight: 700,
+              cursor: confirmed ? "default" : "pointer", border: "none",
+              background: confirmed ? C.greenPale : C.green,
+              color: confirmed ? C.green : "#fff",
+              fontFamily: "'Inter', sans-serif",
+            }}
+          >
+            {confirmed ? "✓ Matched" : "Confirm match"}
+          </button>
+        </div>
       </div>
       <ScoreBar score={m.score} />
 
@@ -1157,7 +1172,7 @@ function MatchCard({ m, rank, nameLabel, nameEmail }) {
   );
 }
 
-function MatchGroup({ id, label, zip, contactEmail, rows, expanded, onToggle, nameKey, accent }) {
+function MatchGroup({ id, label, zip, contactEmail, rows, expanded, onToggle, nameKey, accent, matchedPairs, onConfirm }) {
   const best = rows.length > 0 ? rows[0].score : null;
   const bestColor = best === null ? C.muted : best >= 70 ? C.green : best >= 40 ? C.gold : C.red;
   return (
@@ -1229,7 +1244,15 @@ function MatchGroup({ id, label, zip, contactEmail, rows, expanded, onToggle, na
             </p>
           ) : (
             rows.map((m, rank) => (
-              <MatchCard key={m[nameKey].id} m={m} rank={rank} nameLabel={m[nameKey].label} nameEmail={m[nameKey].contactEmail} />
+              <MatchCard
+                key={m[nameKey].id}
+                m={m}
+                rank={rank}
+                nameLabel={m[nameKey].label}
+                nameEmail={m[nameKey].contactEmail}
+                confirmed={matchedPairs.has(`${m.parent.id}::${m.provider.id}`)}
+                onConfirm={() => onConfirm(m)}
+              />
             ))
           )}
         </div>
@@ -1244,6 +1267,7 @@ export default function ChildcareMatcher() {
   const [tab, setTab] = useState("families");
   const [parents, setParents] = useState([]);
   const [providers, setProviders] = useState([]);
+  const [matchedPairs, setMatchedPairs] = useState(() => new Set());
   const [parentDraft, setParentDraft] = useState(emptyParent());
   const [providerDraft, setProviderDraft] = useState(emptyProvider());
   const [loaded, setLoaded] = useState(false);
@@ -1267,25 +1291,49 @@ export default function ChildcareMatcher() {
 
   useEffect(() => {
     if (!session) return;
+    if (session.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
+      window.location.href = "/my-matches";
+    }
+  }, [session]);
+
+  useEffect(() => {
+    if (!session || session.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) return;
     (async () => {
-      const [{ data: familyRows, error: famErr }, { data: providerRows, error: provErr }] = await Promise.all([
+      const [{ data: familyRows, error: famErr }, { data: providerRows, error: provErr }, { data: matchRows, error: matchErr }] = await Promise.all([
         supabase.from("families").select("*").order("created_at"),
         supabase.from("providers").select("*").order("created_at"),
+        supabase.from("matches").select("family_id, provider_id"),
       ]);
       if (famErr) console.error(famErr);
       if (provErr) console.error(provErr);
+      if (matchErr) console.error(matchErr);
       const p = (familyRows || []).map(rowToFamily);
       const v = (providerRows || []).map(rowToProvider);
       const pIds = new Set(p.map((x) => x.id));
       const vIds = new Set(v.map((x) => x.id));
       setParents([...p, ...SEED_PARENTS.filter((s) => !pIds.has(s.id))]);
       setProviders([...v, ...SEED_PROVIDERS.filter((s) => !vIds.has(s.id))]);
+      setMatchedPairs(new Set((matchRows || []).map((m) => `${m.family_id}::${m.provider_id}`)));
       if (!localStorage.getItem("childcare-disclaimer")) {
         setShowDisclaimer(true);
       }
       setLoaded(true);
     })();
   }, [session]);
+
+  const confirmMatch = async (m) => {
+    const { error } = await supabase.from("matches").insert({ family_id: m.parent.id, provider_id: m.provider.id });
+    if (error) { console.error(error); return; }
+    setMatchedPairs((prev) => new Set(prev).add(`${m.parent.id}::${m.provider.id}`));
+    fetch("/api/notify-match", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        family: { label: m.parent.label, contactEmail: m.parent.contactEmail },
+        provider: { label: m.provider.label, contactEmail: m.provider.contactEmail },
+      }),
+    }).catch((e) => console.error(e));
+  };
 
   const acceptDisclaimer = () => {
     setShowDisclaimer(false);
@@ -1492,6 +1540,8 @@ export default function ChildcareMatcher() {
                 onToggle={() => toggleGroup(g.id)}
                 nameKey={byFamily ? "provider" : "parent"}
                 accent={accent}
+                matchedPairs={matchedPairs}
+                onConfirm={confirmMatch}
               />
             );
           })
@@ -1513,6 +1563,17 @@ export default function ChildcareMatcher() {
 
   if (!session) {
     return <LoginForm />;
+  }
+
+  if (session.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
+    return (
+      <div style={{
+        minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+        background: C.bg, color: C.muted, fontFamily: "'Inter', sans-serif",
+      }}>
+        Redirecting…
+      </div>
+    );
   }
 
   return (
