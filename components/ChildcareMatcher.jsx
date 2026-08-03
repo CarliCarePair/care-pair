@@ -107,6 +107,7 @@ export function emptyParent() {
     id: uid(),
     status: "approved",
     label: "",
+    contactEmail: "",
     zip: "",
     flexible: false,
     days: [],
@@ -133,6 +134,7 @@ export function emptyProvider() {
     id: uid(),
     status: "approved",
     label: "",
+    contactEmail: "",
     zip: "",
     flexible: false,
     days: [],
@@ -162,6 +164,7 @@ const FAMILY_FIELDS = [
   ["needsTransport", "needs_transport"], ["transportCar", "transport_car"],
   ["requiresDrivingRecord", "requires_driving_record"], ["requiresCPR", "requires_cpr"],
   ["requiresClearances", "requires_clearances"], ["notes", "notes"], ["status", "status"],
+  ["contactEmail", "contact_email"],
 ];
 
 const PROVIDER_FIELDS = [
@@ -171,7 +174,7 @@ const PROVIDER_FIELDS = [
   ["minAge", "min_age"], ["maxAge", "max_age"], ["ageNoPreference", "age_no_preference"],
   ["rate", "rate"], ["careLocation", "care_location"], ["hasTransport", "has_transport"],
   ["cprCertified", "cpr_certified"], ["hasClearances", "has_clearances"], ["notes", "notes"],
-  ["status", "status"],
+  ["status", "status"], ["contactEmail", "contact_email"],
 ];
 
 function toRow(item, fieldMap) {
@@ -658,6 +661,15 @@ export function ListingForm({ kind, draft, setDraft, onSave, onCancel, saveLabel
             placeholder={isParent ? "e.g. The Kowalski family" : "e.g. Sarah's In-Home Care"}
           />
         </Field>
+        <Field label="Contact email">
+          <input
+            type="email"
+            style={inputStyle}
+            value={draft.contactEmail}
+            onChange={(e) => setDraft({ ...draft, contactEmail: e.target.value })}
+            placeholder="you@example.com"
+          />
+        </Field>
         <Field label="ZIP code">
           <input
             style={{ ...inputStyle, maxWidth: 120 }}
@@ -961,6 +973,13 @@ function ListingCard({ item, kind, onDelete, onSave, onApprove }) {
           }}>
             {item.label || "(untitled)"}
           </span>
+          {item.contactEmail ? (
+            <a href={`mailto:${item.contactEmail}`} style={{ fontSize: 12, color: C.plum, fontWeight: 600 }}>
+              {item.contactEmail}
+            </a>
+          ) : (
+            <Chip tone="red">no contact email</Chip>
+          )}
           {followUp && <Chip tone="gold">needs follow-up</Chip>}
           {item.status === "pending" && <Chip tone="gold">pending review</Chip>}
         </div>
@@ -1033,7 +1052,7 @@ function ListingCard({ item, kind, onDelete, onSave, onApprove }) {
 
 // ────────────────────────── match cards & groups ──────────────────────────
 
-function MatchCard({ m, rank, nameLabel }) {
+function MatchCard({ m, rank, nameLabel, nameEmail }) {
   const scoreColor = m.score >= 70 ? C.green : m.score >= 40 ? C.gold : C.red;
   const insight = matchInsight(m);
   return (
@@ -1049,6 +1068,11 @@ function MatchCard({ m, rank, nameLabel }) {
           <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: 700, color: C.ink }}>
             {nameLabel}
           </span>
+          {nameEmail && (
+            <a href={`mailto:${nameEmail}`} style={{ fontSize: 11, color: C.plum, fontWeight: 600 }}>
+              {nameEmail}
+            </a>
+          )}
         </div>
         <span style={{
           fontSize: 12, fontWeight: 700, padding: "2px 10px", borderRadius: 20,
@@ -1133,7 +1157,7 @@ function MatchCard({ m, rank, nameLabel }) {
   );
 }
 
-function MatchGroup({ id, label, zip, rows, expanded, onToggle, nameKey, accent }) {
+function MatchGroup({ id, label, zip, contactEmail, rows, expanded, onToggle, nameKey, accent }) {
   const best = rows.length > 0 ? rows[0].score : null;
   const bestColor = best === null ? C.muted : best >= 70 ? C.green : best >= 40 ? C.gold : C.red;
   return (
@@ -1166,6 +1190,15 @@ function MatchGroup({ id, label, zip, rows, expanded, onToggle, nameKey, accent 
             {zip}
           </span>
         )}
+        {contactEmail && (
+          <a
+            href={`mailto:${contactEmail}`}
+            onClick={(e) => e.stopPropagation()}
+            style={{ fontSize: 11, color: expanded ? "rgba(255,255,255,0.9)" : C.plum, fontWeight: 600 }}
+          >
+            {contactEmail}
+          </a>
+        )}
         <span style={{
           fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20,
           background: expanded ? "rgba(255,255,255,0.2)" : C.plumPale,
@@ -1196,7 +1229,7 @@ function MatchGroup({ id, label, zip, rows, expanded, onToggle, nameKey, accent 
             </p>
           ) : (
             rows.map((m, rank) => (
-              <MatchCard key={m[nameKey].id} m={m} rank={rank} nameLabel={m[nameKey].label} />
+              <MatchCard key={m[nameKey].id} m={m} rank={rank} nameLabel={m[nameKey].label} nameEmail={m[nameKey].contactEmail} />
             ))
           )}
         </div>
@@ -1453,6 +1486,7 @@ export default function ChildcareMatcher() {
                 id={g.id}
                 label={g.label}
                 zip={g.zip}
+                contactEmail={g.contactEmail}
                 rows={rows}
                 expanded={expandedGroups.has(g.id)}
                 onToggle={() => toggleGroup(g.id)}

@@ -117,7 +117,10 @@ function JoinContent() {
   }
 
   const handleSubmit = async () => {
-    if (!draft.label.trim()) return;
+    if (!draft.label.trim() || !draft.contactEmail.trim()) {
+      setPhase("missing-fields");
+      return;
+    }
     setPhase("submitting");
     const table = kind === "parent" ? "families" : "providers";
     const toRow = kind === "parent" ? familyToRow : providerToRow;
@@ -128,6 +131,11 @@ function JoinContent() {
       return;
     }
     setPhase("done");
+    fetch("/api/notify-submission", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind, label: draft.label }),
+    }).catch((e) => console.error(e));
   };
 
   return (
@@ -138,6 +146,11 @@ function JoinContent() {
       {phase === "error" && (
         <p style={{ margin: 0, fontSize: 13, color: C.red }}>
           Something went wrong submitting your info. Please try again.
+        </p>
+      )}
+      {phase === "missing-fields" && (
+        <p style={{ margin: 0, fontSize: 13, color: C.red }}>
+          Please fill in your name and a contact email before submitting.
         </p>
       )}
       <ListingForm
