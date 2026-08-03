@@ -293,7 +293,7 @@ function rateCompatible(p, prov) {
   return { ratio, gap, label: `$${gap.toFixed(2)}/hr short (max $${familyRange.max} vs $${provExpected} expected)` };
 }
 
-function scoreMatch(p, prov) {
+export function scoreMatch(p, prov) {
   const flexible = p.flexible || prov.flexible;
   const day = flexible ? 1 : dayOverlapRatio(p, prov);
   const hour = flexible ? 1 : hourOverlapRatio(p, prov);
@@ -1063,7 +1063,6 @@ export function ListingChips({ item, kind }) {
 
 function MatchCard({ m, rank, nameLabel, nameEmail, confirmed, onConfirm }) {
   const scoreColor = m.score >= 70 ? C.green : m.score >= 40 ? C.gold : C.red;
-  const insight = matchInsight(m);
   return (
     <div style={{
       borderRadius: 14, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10,
@@ -1105,6 +1104,15 @@ function MatchCard({ m, rank, nameLabel, nameEmail, confirmed, onConfirm }) {
           </button>
         </div>
       </div>
+      <MatchInsightPanel m={m} />
+    </div>
+  );
+}
+
+export function MatchInsightPanel({ m }) {
+  const insight = matchInsight(m);
+  return (
+    <>
       <ScoreBar score={m.score} />
 
       {/* confidence banner */}
@@ -1177,7 +1185,7 @@ function MatchCard({ m, rank, nameLabel, nameEmail, confirmed, onConfirm }) {
           {m.missingClearances && <span style={{ color: C.red }}>⚠ clearances missing</span>}
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

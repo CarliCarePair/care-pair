@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { C, FONT, LOGO_FIGURES } from "@/lib/theme";
-import { ListingChips, rowToFamily, rowToProvider } from "@/components/ChildcareMatcher";
+import { ListingChips, MatchInsightPanel, rowToFamily, rowToProvider, scoreMatch } from "@/components/ChildcareMatcher";
 
 function Shell({ children }) {
   return (
@@ -22,8 +22,11 @@ function Shell({ children }) {
   );
 }
 
-function CounterpartCard({ counterpart, isProvider }) {
-  const item = isProvider ? rowToProvider(counterpart) : rowToFamily(counterpart);
+function CounterpartCard({ match, isProvider }) {
+  const family = rowToFamily(match.families);
+  const provider = rowToProvider(match.providers);
+  const item = isProvider ? family : provider;
+  const m = { parent: family, provider, ...scoreMatch(family, provider) };
   return (
     <div style={{
       borderRadius: 16, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 9,
@@ -37,7 +40,8 @@ function CounterpartCard({ counterpart, isProvider }) {
           {item.contactEmail}
         </a>
       )}
-      <ListingChips item={item} kind={isProvider ? "provider" : "parent"} />
+      <ListingChips item={item} kind={isProvider ? "parent" : "provider"} />
+      <MatchInsightPanel m={m} />
     </div>
   );
 }
@@ -120,9 +124,24 @@ export default function MyMatches() {
 
   return (
     <Shell>
-      <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: C.ink, margin: 0 }}>
-        Your matches
-      </h1>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+        <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: C.ink, margin: 0 }}>
+          Your matches
+        </h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 11, color: C.muted }}>Signed in as {session.user.email}</span>
+          <button
+            onClick={() => supabase.auth.signOut()}
+            style={{
+              padding: "6px 12px", borderRadius: 8, cursor: "pointer",
+              background: "transparent", color: C.muted, border: `1px solid ${C.line}`,
+              fontSize: 11, fontWeight: 700, fontFamily: "'Inter', sans-serif",
+            }}
+          >
+            Sign out
+          </button>
+        </div>
+      </div>
       {matches === null ? (
         <p style={{ color: C.muted, fontSize: 13 }}>Loading…</p>
       ) : matches.length === 0 ? (
@@ -131,11 +150,10 @@ export default function MyMatches() {
         </p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {matches.map((m) => {
-            const isProvider = session.user.email === m.providers?.contact_email;
-            const counterpart = isProvider ? m.families : m.providers;
-            return counterpart ? (
-              <CounterpartCard key={m.id} counterpart={counterpart} isProvider={!isProvider} />
+          {matches.map((match) => {
+            const isProvider = session.user.email === match.providers?.contact_email;
+            return match.families && match.providers ? (
+              <CounterpartCard key={match.id} match={match} isProvider={isProvider} />
             ) : null;
           })}
         </div>
