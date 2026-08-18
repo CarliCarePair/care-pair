@@ -37,7 +37,7 @@ function KindPicker({ onChoose }) {
         Let&rsquo;s get you set up
       </h1>
       <p style={{ margin: 0, fontSize: 14, color: C.muted, lineHeight: 1.6 }}>
-        Tell us a bit about your schedule and needs. Carli reviews every submission before it goes live.
+        Tell us a bit about your schedule and needs. We review every submission before it goes live.
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <button
@@ -76,7 +76,7 @@ function SuccessScreen() {
           Thanks — you&rsquo;re on the list!
         </h1>
         <p style={{ margin: 0, fontSize: 14, color: C.ink, lineHeight: 1.6 }}>
-          Carli will review your info shortly. Once approved, you&rsquo;ll start showing up in matches.
+          We&rsquo;ll review your info shortly. Once approved, you&rsquo;ll start showing up in matches.
         </p>
       </div>
     </Shell>
