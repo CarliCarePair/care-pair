@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { C, FONT, LOGO_FIGURES } from "@/lib/theme";
-import { ListingChips, MatchInsightPanel, rowToFamily, rowToProvider, scoreMatch } from "@/components/ChildcareMatcher";
+import { ListingChips, MatchInsightPanel, rowToFamily, rowToProvider } from "@/components/ChildcareMatcher";
+import { scoreMatch } from "@/lib/matching";
 
 function Shell({ children }) {
   return (
