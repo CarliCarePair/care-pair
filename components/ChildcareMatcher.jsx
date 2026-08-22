@@ -49,6 +49,7 @@ export function emptyParent() {
     requiresCPR: false,
     requiresClearances: false,
     notes: "",
+    shareContactConsent: false,
   };
 }
 
@@ -75,6 +76,7 @@ export function emptyProvider() {
     cprCertified: false,
     hasClearances: false,
     notes: "",
+    shareContactConsent: false,
   };
 }
 
@@ -87,7 +89,7 @@ const FAMILY_FIELDS = [
   ["needsTransport", "needs_transport"], ["transportCar", "transport_car"],
   ["requiresDrivingRecord", "requires_driving_record"], ["requiresCPR", "requires_cpr"],
   ["requiresClearances", "requires_clearances"], ["notes", "notes"], ["status", "status"],
-  ["contactEmail", "contact_email"],
+  ["contactEmail", "contact_email"], ["shareContactConsent", "share_contact_consent"],
 ];
 
 const PROVIDER_FIELDS = [
@@ -97,7 +99,7 @@ const PROVIDER_FIELDS = [
   ["minAge", "min_age"], ["maxAge", "max_age"], ["ageNoPreference", "age_no_preference"],
   ["rate", "rate"], ["careLocation", "care_location"], ["hasTransport", "has_transport"],
   ["cprCertified", "cpr_certified"], ["hasClearances", "has_clearances"], ["notes", "notes"],
-  ["status", "status"], ["contactEmail", "contact_email"],
+  ["status", "status"], ["contactEmail", "contact_email"], ["shareContactConsent", "share_contact_consent"],
 ];
 
 function toRow(item, fieldMap) {
@@ -615,6 +617,12 @@ export function ListingForm({ kind, draft, setDraft, onSave, onCancel, saveLabel
             onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
           />
         </Field>
+      </Section>
+
+      <Section title="Permissions">
+        <Toggle checked={draft.shareContactConsent} onChange={(v) => setDraft({ ...draft, shareContactConsent: v })}>
+          Care Pair has your permission to share your contact information with those with whom you match
+        </Toggle>
       </Section>
 
       <div style={{ display: "flex", gap: 10 }}>
